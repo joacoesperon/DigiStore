@@ -55,8 +55,7 @@ export async function POST(request: Request) {
     await serviceClient.storage.from('product-files').remove([currentFilePath])
   }
 
-  const safeName = file.name.replace(/\s+/g, '_')
-  const path = `${productId}/${Date.now()}_${safeName}`
+  const path = `${productId}/${file.name}`
   const arrayBuffer = await file.arrayBuffer()
 
   const { data, error } = await serviceClient.storage

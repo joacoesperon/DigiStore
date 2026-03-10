@@ -44,6 +44,11 @@ export default async function Header() {
           <Link href="/products" className="text-muted-foreground hover:text-foreground transition-colors">
             Products
           </Link>
+          {user && (
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+              Dashboard
+            </Link>
+          )}
           {profile?.role === 'admin' && (
             <Link href="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
               Admin
