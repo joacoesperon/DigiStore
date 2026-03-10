@@ -6,13 +6,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { profileSchema } from '@/lib/utils/validators'
+import { profileSchema, changePasswordSchema } from '@/lib/utils/validators'
+import type { ChangePasswordFormValues } from '@/lib/utils/validators'
 import type { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Chrome } from 'lucide-react'
 
 type ProfileFormValues = z.infer<typeof profileSchema>
 
@@ -20,6 +22,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
+  const [hasEmailIdentity, setHasEmailIdentity] = useState(false)
 
   const {
     register,
@@ -30,6 +33,16 @@ export default function ProfilePage() {
     resolver: zodResolver(profileSchema),
   })
 
+  const {
+    register: registerPwd,
+    handleSubmit: handleSubmitPwd,
+    reset: resetPwd,
+    setError: setPwdError,
+    formState: { errors: pwdErrors, isSubmitting: isPwdSubmitting },
+  } = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordSchema),
+  })
+
   useEffect(() => {
     async function load() {
       const supabase = createClient()
@@ -37,6 +50,9 @@ export default function ProfilePage() {
       if (!user) return
 
       setEmail(user.email ?? '')
+      setHasEmailIdentity(
+        user.identities?.some((i) => i.provider === 'email') ?? false
+      )
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -69,6 +85,35 @@ export default function ProfilePage() {
 
     toast.success('Profile updated')
     router.refresh()
+  }
+
+  async function onChangePassword(values: ChangePasswordFormValues) {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) return
+
+    // Verificar contraseña actual antes de permitir el cambio
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: values.currentPassword,
+    })
+
+    if (signInError) {
+      setPwdError('currentPassword', { message: 'Incorrect password' })
+      return
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: values.newPassword,
+    })
+
+    if (updateError) {
+      toast.error(updateError.message)
+      return
+    }
+
+    toast.success('Password updated successfully')
+    resetPwd()
   }
 
   if (loading) {
@@ -116,6 +161,78 @@ export default function ProfilePage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Sección de contraseña — solo para usuarios con email/password */}
+      {hasEmailIdentity ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Change Password</CardTitle>
+            <CardDescription>
+              Enter your current password to set a new one.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmitPwd(onChangePassword)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...registerPwd('currentPassword')}
+                />
+                {pwdErrors.currentPassword && (
+                  <p className="text-xs text-destructive">{pwdErrors.currentPassword.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  {...registerPwd('newPassword')}
+                />
+                {pwdErrors.newPassword && (
+                  <p className="text-xs text-destructive">{pwdErrors.newPassword.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm new password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  {...registerPwd('confirmPassword')}
+                />
+                {pwdErrors.confirmPassword && (
+                  <p className="text-xs text-destructive">{pwdErrors.confirmPassword.message}</p>
+                )}
+              </div>
+              <Button type="submit" disabled={isPwdSubmitting}>
+                {isPwdSubmitting ? 'Updating...' : 'Update password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Password</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Chrome className="h-4 w-4 shrink-0" />
+              <p>
+                Your account uses Google Sign-In. Password management is handled by Google.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

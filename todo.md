@@ -29,14 +29,16 @@
 - [x] Botón Download en FileUpload para que admin pueda descargar archivos
 - [x] Flujo completo de recuperación de contraseña (forgot-password + reset-password)
 - [x] Fix callback route: prioridad de 'next' sobre 'redirectTo'
+- [x] Cuando se sube un fichero, que no se modifique el nombre original del archivo
+- [x] Que el acceso a /dashboard esté disponible también desde el header (usuarios logueados)
+- [x] Sistema de límite de 1 licencia activa por plan por usuario (checkout + webhook + UI)
+- [x] Ocultar botón "Create account" en homepage si ya hay sesión iniciada
+- [x] Cambiar contraseña desde /dashboard/profile (con verificación de contraseña actual, adaptativo por tipo de identidad)
 
 ---
 
 ## Pendiente
 
-- [x] Cuando se sube un fichero, que no se modifique el nombre original del archivo
 - [ ] Implementar course viewer (DB migration, curriculum builder en admin, player en dashboard)
-- [x] Que el acceso a /dashboard esté disponible también desde el header (usuarios logueados)
-- [ ] Diseñar sistema para limitar cuántas licencias puede tener un usuario por plan (máx 1 por plan)
-- [ ] Opción para cambiar contraseña desde /dashboard/profile (usuario logueado)
-- [ ] Admin: poder cambiar el estado de una licencia directamente desde la vista de licencia
+- [ ] Admin: gestión avanzada de licencias (cambiar estado, ver licencias por usuario, revocar/eliminar)
+- [ ] Que los usuarios puedan cancelar suscripciones y mantener acceso hasta el próximo período de facturación

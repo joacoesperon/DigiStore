@@ -53,10 +53,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
   }
 
-  // 4. Handle free plan — no Stripe needed
-  if (plan.price === 0 || plan.type === 'trial') {
-    const supabaseAdmin = createAdminClient()
+  // 4. Verificar que el usuario no tenga ya una licencia activa para este plan
+  const supabaseAdmin = createAdminClient()
+  const { data: existingLicense } = await supabaseAdmin
+    .from('licenses')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('license_plan_id', planId)
+    .in('status', ['active', 'trial'])
+    .maybeSingle()
 
+  if (existingLicense) {
+    return NextResponse.json(
+      { error: 'You already have an active license for this plan' },
+      { status: 409 }
+    )
+  }
+
+  // 5. Handle free plan — no Stripe needed
+  if (plan.price === 0 || plan.type === 'trial') {
     const licenseKey = await generateUniqueLicenseKey(async (key) => {
       const { data } = await supabaseAdmin
         .from('licenses')
@@ -115,7 +130,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ licenseKey, planType: plan.type })
   }
 
-  // 5. Validate coupon if provided
+  // 6. Validate coupon if provided
   let discountAmount = 0
   let couponId: string | null = null
 
@@ -145,7 +160,7 @@ export async function POST(request: Request) {
 
   const unitAmount = Math.max(0, plan.price - discountAmount)
 
-  // 6. Create Stripe Checkout Session
+  // 7. Create Stripe Checkout Session
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
 
   const isSubscription = plan.type === 'subscription'

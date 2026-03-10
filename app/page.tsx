@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ArrowRight, BookOpen, Code, Layout, Video, ShieldCheck, Zap, Globe } from 'lucide-react'
@@ -17,6 +17,8 @@ const CATEGORIES_DISPLAY = [
 
 export default async function HomePage() {
   const supabase = createServiceClient()
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
 
   const { data: products } = await supabase
     .from('products')
@@ -47,9 +49,11 @@ export default async function HomePage() {
                 Browse products <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/auth/register">Create account</Link>
-            </Button>
+            {!user && (
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/auth/register">Create account</Link>
+              </Button>
+            )}
           </div>
         </div>
       </section>

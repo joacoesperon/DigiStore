@@ -39,6 +39,21 @@ export async function handleCheckoutSessionCompleted(
 
   if (!plan) return
 
+  // Idempotencia: si ya existe licencia activa para este plan no crear otra
+  // (puede ocurrir si Stripe reintenta el webhook)
+  const { data: existingLicense } = await supabase
+    .from('licenses')
+    .select('id')
+    .eq('user_id', meta.user_id)
+    .eq('license_plan_id', meta.license_plan_id)
+    .in('status', ['active', 'trial'])
+    .maybeSingle()
+
+  if (existingLicense) {
+    console.log('[webhook] License already exists for this plan, skipping duplicate creation')
+    return
+  }
+
   // Crear orden
   const { data: order, error: orderError } = await supabase
     .from('orders')

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,7 @@ interface PlanCardProps {
   onSelect: (planId: string) => void
   isSelected?: boolean
   isPurchasing?: boolean
+  isOwned?: boolean
 }
 
 const PLAN_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
@@ -18,7 +20,7 @@ const PLAN_BADGE: Record<string, { label: string; variant: 'default' | 'secondar
   trial: { label: 'Free Trial', variant: 'outline' },
 }
 
-export default function PlanCard({ plan, onSelect, isSelected, isPurchasing }: PlanCardProps) {
+export default function PlanCard({ plan, onSelect, isSelected, isPurchasing, isOwned }: PlanCardProps) {
   const badge = PLAN_BADGE[plan.type] ?? { label: plan.type, variant: 'outline' as const }
   const features = Array.isArray(plan.features) ? (plan.features as string[]) : []
 
@@ -38,12 +40,19 @@ export default function PlanCard({ plan, onSelect, isSelected, isPurchasing }: P
     return `Buy now — ${formatCurrency(plan.price)}`
   })()
 
+  const cardClass = isOwned
+    ? 'flex flex-col transition-all border-green-500 ring-1 ring-green-500'
+    : `flex flex-col transition-all ${isSelected ? 'border-primary ring-1 ring-primary' : ''}`
+
   return (
-    <Card className={`flex flex-col transition-all ${isSelected ? 'border-primary ring-1 ring-primary' : ''}`}>
+    <Card className={cardClass}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <CardTitle className="text-lg">{plan.name}</CardTitle>
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          {isOwned
+            ? <Badge className="bg-green-500/15 text-green-600 border-green-500/30">Active</Badge>
+            : <Badge variant={badge.variant}>{badge.label}</Badge>
+          }
         </div>
         <CardDescription>
           <span className="text-2xl font-bold text-foreground">{priceLabel}</span>
@@ -68,14 +77,20 @@ export default function PlanCard({ plan, onSelect, isSelected, isPurchasing }: P
       )}
 
       <CardFooter>
-        <Button
-          className="w-full"
-          variant={isSelected ? 'default' : 'outline'}
-          onClick={() => onSelect(plan.id)}
-          disabled={isPurchasing}
-        >
-          {buttonLabel}
-        </Button>
+        {isOwned ? (
+          <Button className="w-full" variant="secondary" asChild>
+            <Link href="/dashboard/licenses">Manage license →</Link>
+          </Button>
+        ) : (
+          <Button
+            className="w-full"
+            variant={isSelected ? 'default' : 'outline'}
+            onClick={() => onSelect(plan.id)}
+            disabled={isPurchasing}
+          >
+            {buttonLabel}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   )

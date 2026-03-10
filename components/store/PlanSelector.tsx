@@ -9,9 +9,10 @@ import type { LicensePlan } from '@/types'
 interface PlanSelectorProps {
   plans: LicensePlan[]
   productId: string
+  ownedPlanIds?: string[]
 }
 
-export default function PlanSelector({ plans, productId }: PlanSelectorProps) {
+export default function PlanSelector({ plans, productId, ownedPlanIds = [] }: PlanSelectorProps) {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [isPurchasing, setIsPurchasing] = useState(false)
   const router = useRouter()
@@ -38,6 +39,12 @@ export default function PlanSelector({ plans, productId }: PlanSelectorProps) {
         return
       }
 
+      if (res.status === 409) {
+        toast.error('You already have an active license for this plan')
+        router.push('/dashboard/licenses')
+        return
+      }
+
       const data = await res.json()
 
       if (!res.ok) {
@@ -59,6 +66,11 @@ export default function PlanSelector({ plans, productId }: PlanSelectorProps) {
     }
   }
 
+  function handleSelect(planId: string) {
+    if (ownedPlanIds.includes(planId)) return
+    setSelectedPlanId(planId)
+  }
+
   if (activePlans.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">No plans available at the moment.</p>
@@ -73,13 +85,14 @@ export default function PlanSelector({ plans, productId }: PlanSelectorProps) {
           <PlanCard
             key={plan.id}
             plan={plan}
-            onSelect={setSelectedPlanId}
+            onSelect={handleSelect}
             isSelected={selectedPlanId === plan.id}
             isPurchasing={isPurchasing}
+            isOwned={ownedPlanIds.includes(plan.id)}
           />
         ))}
       </div>
-      {selectedPlanId && (
+      {selectedPlanId && !ownedPlanIds.includes(selectedPlanId) && (
         <div className="flex justify-end">
           <button
             onClick={handlePurchase}

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import PlanSelector from '@/components/store/PlanSelector'
@@ -44,6 +44,21 @@ export default async function ProductDetailPage({
   if (!product) notFound()
 
   const p = product as ProductWithPlans
+
+  // Obtener qué planes ya posee el usuario (licencias activas/trial)
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+
+  let ownedPlanIds: string[] = []
+  if (user) {
+    const { data: licenses } = await supabase
+      .from('licenses')
+      .select('license_plan_id')
+      .eq('user_id', user.id)
+      .eq('product_id', p.id)
+      .in('status', ['active', 'trial'])
+    ownedPlanIds = licenses?.map((l) => l.license_plan_id) ?? []
+  }
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-5xl">
@@ -93,7 +108,7 @@ export default async function ProductDetailPage({
       <Separator className="mb-8" />
 
       {/* Plans */}
-      <PlanSelector plans={p.license_plans} productId={p.id} />
+      <PlanSelector plans={p.license_plans} productId={p.id} ownedPlanIds={ownedPlanIds} />
     </div>
   )
 }
