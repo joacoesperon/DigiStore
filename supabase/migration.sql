@@ -301,3 +301,6 @@ alter table products
 -- This is handled via the signed URL API route — the bucket stays private.
 
 -- Allow service_role to manage files (handled automatically by Supabase)
+
+-- Sesión 12: cancelación de suscripciones por el usuario
+ALTER TABLE licenses ADD COLUMN IF NOT EXISTS cancel_at_period_end boolean NOT NULL DEFAULT false;

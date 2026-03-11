@@ -256,6 +256,7 @@ export type Database = {
           revoked_at: string | null
           revocation_reason: string | null
           stripe_subscription_id: string | null
+          cancel_at_period_end: boolean
           metadata: Json
           created_at: string
           updated_at: string
@@ -276,6 +277,7 @@ export type Database = {
           revoked_at?: string | null
           revocation_reason?: string | null
           stripe_subscription_id?: string | null
+          cancel_at_period_end?: boolean
           metadata?: Json
           created_at?: string
           updated_at?: string
@@ -296,6 +298,7 @@ export type Database = {
           revoked_at?: string | null
           revocation_reason?: string | null
           stripe_subscription_id?: string | null
+          cancel_at_period_end?: boolean
           metadata?: Json
           created_at?: string
           updated_at?: string

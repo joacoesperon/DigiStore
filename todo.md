@@ -34,11 +34,12 @@
 - [x] Sistema de límite de 1 licencia activa por plan por usuario (checkout + webhook + UI)
 - [x] Ocultar botón "Create account" en homepage si ya hay sesión iniciada
 - [x] Cambiar contraseña desde /dashboard/profile (con verificación de contraseña actual, adaptativo por tipo de identidad)
+- [x] Admin: gestión avanzada de licencias (ver propietario, buscar por email, activations adaptativo por tipo de producto)
+- [x] Que los usuarios puedan cancelar suscripciones y mantener acceso hasta el próximo período de facturación
 
 ---
 
 ## Pendiente
 
 - [ ] Implementar course viewer (DB migration, curriculum builder en admin, player en dashboard)
-- [ ] Admin: gestión avanzada de licencias (cambiar estado, ver licencias por usuario, revocar/eliminar)
-- [ ] Que los usuarios puedan cancelar suscripciones y mantener acceso hasta el próximo período de facturación
+- [ ] Implementar como puedo ver la fecha de cuando se renueva/termina los planes de suscripcion

@@ -207,6 +207,25 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   })
 }
 
+export async function handleSubscriptionUpdated(
+  subscription: Stripe.Subscription
+) {
+  const supabase = createAdminClient()
+
+  const { data: license } = await supabase
+    .from('licenses')
+    .select('id')
+    .eq('stripe_subscription_id', subscription.id)
+    .single()
+
+  if (!license) return
+
+  await supabase
+    .from('licenses')
+    .update({ cancel_at_period_end: subscription.cancel_at_period_end })
+    .eq('id', license.id)
+}
+
 export async function handleSubscriptionDeleted(
   subscription: Stripe.Subscription
 ) {

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import LicenseKeyDisplay from '@/components/licenses/LicenseKeyDisplay'
 import ActivationList from '@/components/licenses/ActivationList'
+import CancelSubscriptionButton from '@/components/licenses/CancelSubscriptionButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { formatDate, formatDateTime } from '@/lib/utils/formatters'
 import { LICENSE_STATUS_LABELS, LICENSE_STATUS_COLORS } from '@/types'
 import type { LicenseWithActivations } from '@/types'
-import { Monitor, Calendar, Package, ArrowLeft, Download, PlayCircle } from 'lucide-react'
+import { Monitor, Calendar, Package, ArrowLeft, Download, PlayCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
 type ProductType = 'software' | 'ebook' | 'course' | 'template'
@@ -40,18 +41,24 @@ export default async function LicenseDetailPage({
 
   const license = data as unknown as LicenseWithActivations & {
     products: { file_path: string | null; type: ProductType; slug: string }
+    cancel_at_period_end: boolean
   }
 
   const productType: ProductType = license.products.type
   const isSoftware = productType === 'software'
   const isCourse = productType === 'course'
   const isDownloadable = productType === 'ebook' || productType === 'template'
+  const isSubscription = license.type === 'subscription'
 
   const statusLabel = LICENSE_STATUS_LABELS[license.status] ?? license.status
   const statusColor = LICENSE_STATUS_COLORS[license.status] ?? ''
   const isActive = license.status === 'active' || license.status === 'trial'
   const hasFile = !!(license.products as unknown as { file_path: string | null }).file_path
   const canDownload = hasFile && isActive
+
+  // For subscriptions: "Renews" if not scheduled to cancel, "Expires" if cancellation pending
+  const expiresLabel =
+    isSubscription && isActive && !license.cancel_at_period_end ? 'Renews' : 'Expires'
 
   return (
     <div className="space-y-6">
@@ -70,6 +77,18 @@ export default async function LicenseDetailPage({
           {statusLabel}
         </Badge>
       </div>
+
+      {/* Subscription cancellation banner */}
+      {isSubscription && license.cancel_at_period_end && license.expires_at && (
+        <div className="flex items-start gap-3 rounded-md border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <p>
+            Your subscription is scheduled to cancel on{' '}
+            <strong>{formatDate(license.expires_at)}</strong>.
+            You&apos;ll keep full access until then.
+          </p>
+        </div>
+      )}
 
       {/* Course: Go to course button */}
       {isCourse && isActive && (
@@ -129,7 +148,7 @@ export default async function LicenseDetailPage({
               <Separator />
               <div className="flex items-center gap-3 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-muted-foreground">Expires</span>
+                <span className="text-muted-foreground">{expiresLabel}</span>
                 <span className="ml-auto font-medium">{formatDate(license.expires_at)}</span>
               </div>
             </>
@@ -142,6 +161,15 @@ export default async function LicenseDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Cancel / reactivate subscription */}
+      {isSubscription && isActive && (
+        <CancelSubscriptionButton
+          licenseId={license.id}
+          cancelAtPeriodEnd={license.cancel_at_period_end}
+          expiresAt={license.expires_at}
+        />
+      )}
 
       {/* Active Devices — software only */}
       {isSoftware && (
@@ -157,3 +185,4 @@ export default async function LicenseDetailPage({
     </div>
   )
 }
+

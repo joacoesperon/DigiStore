@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe/client'
 import {
   handleCheckoutSessionCompleted,
   handleInvoicePaymentSucceeded,
+  handleSubscriptionUpdated,
   handleSubscriptionDeleted,
 } from '@/lib/stripe/webhook-handlers'
 import type Stripe from 'stripe'
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
         break
       case 'invoice.payment_succeeded':
         await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice)
+        break
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
         break
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)

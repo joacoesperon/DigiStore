@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { formatDate, formatDateTime } from '@/lib/utils/formatters'
 import { LICENSE_STATUS_LABELS, LICENSE_STATUS_COLORS } from '@/types'
-import type { License, LicenseEvent, LicenseActivation, Product, LicensePlan } from '@/types'
+import type { License, LicenseEvent, LicenseActivation, Product, LicensePlan, Profile } from '@/types'
 import RevokeDialog from '@/components/admin/RevokeDialog'
 import SuspendButton from '@/components/admin/SuspendButton'
-import { ArrowLeft, Monitor, Calendar } from 'lucide-react'
+import { ArrowLeft, Monitor, Calendar, UserCircle } from 'lucide-react'
 import Link from 'next/link'
 
 const EVENT_LABELS: Record<string, string> = {
@@ -24,7 +24,7 @@ const EVENT_LABELS: Record<string, string> = {
 }
 
 type LicenseFull = License & {
-  products: Pick<Product, 'id' | 'name' | 'slug'>
+  products: Pick<Product, 'id' | 'name' | 'slug' | 'type'>
   license_plans: Pick<LicensePlan, 'id' | 'name' | 'type'>
   license_activations: LicenseActivation[]
   license_events: LicenseEvent[]
@@ -42,7 +42,7 @@ export default async function AdminLicenseDetailPage({
     .from('licenses')
     .select(`
       *,
-      products(id, name, slug),
+      products(id, name, slug, type),
       license_plans(id, name, type),
       license_activations(*),
       license_events(*)
@@ -53,6 +53,16 @@ export default async function AdminLicenseDetailPage({
   if (!data) notFound()
 
   const license = data as unknown as LicenseFull
+
+  // Fetch license owner profile
+  const { data: ownerProfile } = await supabase
+    .from('profiles')
+    .select('id, email, full_name')
+    .eq('id', license.user_id)
+    .single()
+
+  const owner = ownerProfile as Pick<Profile, 'id' | 'email' | 'full_name'> | null
+
   const statusLabel = LICENSE_STATUS_LABELS[license.status] ?? license.status
   const statusColor = LICENSE_STATUS_COLORS[license.status] ?? ''
 
@@ -60,6 +70,8 @@ export default async function AdminLicenseDetailPage({
   const events = [...(license.license_events ?? [])].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
+
+  const isSoftware = license.products.type === 'software'
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -87,6 +99,27 @@ export default async function AdminLicenseDetailPage({
         </div>
       )}
 
+      {/* Owner */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Owner</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div>
+              {owner?.full_name && (
+                <p className="font-medium">{owner.full_name}</p>
+              )}
+              <p className="text-muted-foreground">{owner?.email ?? license.user_id}</p>
+            </div>
+          </div>
+          <Separator />
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">User ID</span>
+            <span className="font-mono text-xs text-muted-foreground">{license.user_id}</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Details */}
       <Card>
         <CardHeader><CardTitle className="text-base">Details</CardTitle></CardHeader>
@@ -95,14 +128,18 @@ export default async function AdminLicenseDetailPage({
             <span className="text-muted-foreground">Type</span>
             <span className="capitalize">{license.type}</span>
           </div>
-          <Separator />
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Activations</span>
-            <span className="flex items-center gap-1">
-              <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
-              {license.activation_count} / {license.max_activations}
-            </span>
-          </div>
+          {isSoftware && (
+            <>
+              <Separator />
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Activations</span>
+                <span className="flex items-center gap-1">
+                  <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                  {license.activation_count} / {license.max_activations}
+                </span>
+              </div>
+            </>
+          )}
           {license.expires_at && (
             <>
               <Separator />
@@ -135,25 +172,27 @@ export default async function AdminLicenseDetailPage({
         </CardContent>
       </Card>
 
-      {/* Active activations */}
-      <div>
-        <h2 className="text-base font-semibold mb-3">Active Devices ({activeActivations.length})</h2>
-        {activeActivations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No active devices.</p>
-        ) : (
-          <div className="space-y-2">
-            {activeActivations.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
-                <div>
-                  <p className="font-medium">{a.machine_name ?? a.machine_id}</p>
-                  <p className="text-xs text-muted-foreground">Last seen: {formatDateTime(a.last_seen_at)}</p>
+      {/* Active Devices — only for software */}
+      {isSoftware && (
+        <div>
+          <h2 className="text-base font-semibold mb-3">Active Devices ({activeActivations.length})</h2>
+          {activeActivations.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No active devices.</p>
+          ) : (
+            <div className="space-y-2">
+              {activeActivations.map((a) => (
+                <div key={a.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                  <div>
+                    <p className="font-medium">{a.machine_name ?? a.machine_id}</p>
+                    <p className="text-xs text-muted-foreground">Last seen: {formatDateTime(a.last_seen_at)}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-mono">{a.ip_address ?? ''}</p>
                 </div>
-                <p className="text-xs text-muted-foreground font-mono">{a.ip_address ?? ''}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Event log */}
       <div>
