@@ -50,14 +50,26 @@ export default async function ProductDetailPage({
   const { data: { user } } = await authClient.auth.getUser()
 
   let ownedPlanIds: string[] = []
+  let usedTrialPlanIds: string[] = []
   if (user) {
-    const { data: licenses } = await supabase
+    const now = new Date().toISOString()
+    const { data: activeLicenses } = await supabase
       .from('licenses')
       .select('license_plan_id')
       .eq('user_id', user.id)
       .eq('product_id', p.id)
       .in('status', ['active', 'trial'])
-    ownedPlanIds = licenses?.map((l) => l.license_plan_id) ?? []
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+    ownedPlanIds = activeLicenses?.map((l) => l.license_plan_id) ?? []
+
+    // Trials que ya se usaron alguna vez (cualquier status, incluyendo revoked/expired)
+    const { data: trialLicenses } = await supabase
+      .from('licenses')
+      .select('license_plan_id')
+      .eq('user_id', user.id)
+      .eq('product_id', p.id)
+      .eq('type', 'trial')
+    usedTrialPlanIds = trialLicenses?.map((l) => l.license_plan_id) ?? []
   }
 
   return (
@@ -108,7 +120,7 @@ export default async function ProductDetailPage({
       <Separator className="mb-8" />
 
       {/* Plans */}
-      <PlanSelector plans={p.license_plans} productId={p.id} ownedPlanIds={ownedPlanIds} />
+      <PlanSelector plans={p.license_plans} productId={p.id} ownedPlanIds={ownedPlanIds} usedTrialPlanIds={usedTrialPlanIds} />
     </div>
   )
 }

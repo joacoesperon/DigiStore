@@ -1,6 +1,11 @@
 import { stripe } from '@/lib/stripe/client'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateUniqueLicenseKey } from '@/lib/licenses/generate'
+import {
+  sendPaymentFailedEmail,
+  sendPaymentRecoveredEmail,
+  sendSubscriptionCancelledEmail,
+} from '@/lib/email/send'
 import type Stripe from 'stripe'
 import { addDays, addMonths, addYears } from 'date-fns'
 
@@ -111,11 +116,14 @@ export async function handleCheckoutSessionCompleted(
     return
   }
 
-  const expiresAt = calculateExpiresAt(
-    plan.type as LicensePlanType,
-    plan.billing_interval,
-    plan.trial_days
-  )
+  const hasStripeTrial = plan.type === 'subscription' && !!plan.trial_days && plan.trial_days > 0
+
+  const licenseStatus: 'trial' | 'active' =
+    plan.type === 'trial' || hasStripeTrial ? 'trial' : 'active'
+
+  const expiresAt = hasStripeTrial
+    ? addDays(new Date(), plan.trial_days!).toISOString()
+    : calculateExpiresAt(plan.type as LicensePlanType, plan.billing_interval, plan.trial_days)
 
   // Crear licencia
   const { data: license, error: licenseError } = await supabase
@@ -126,7 +134,7 @@ export async function handleCheckoutSessionCompleted(
       product_id: meta.product_id,
       license_plan_id: meta.license_plan_id,
       order_item_id: orderItem.id,
-      status: (plan.type === 'trial' ? 'trial' : 'active') as 'trial' | 'active',
+      status: licenseStatus,
       type: plan.type as LicensePlanType,
       max_activations: plan.max_activations,
       activation_count: 0,
@@ -158,6 +166,43 @@ export async function handleCheckoutSessionCompleted(
   }
 }
 
+export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const subscriptionId =
+    invoice.parent?.type === 'subscription_details'
+      ? invoice.parent.subscription_details?.subscription
+      : null
+
+  if (!subscriptionId) return
+
+  const subId = typeof subscriptionId === 'string' ? subscriptionId : subscriptionId.id
+
+  const supabase = createAdminClient()
+
+  const { data: license } = await supabase
+    .from('licenses')
+    .select('id, user_id')
+    .eq('stripe_subscription_id', subId)
+    .single()
+
+  if (!license) return
+
+  await supabase
+    .from('licenses')
+    .update({ status: 'suspended' as const, updated_at: new Date().toISOString() })
+    .eq('id', license.id)
+
+  await supabase.from('license_events').insert({
+    license_id: license.id,
+    event_type: 'suspended' as const,
+    metadata: {
+      reason: 'payment_failed',
+      next_payment_attempt: invoice.next_payment_attempt ?? null,
+    },
+  })
+
+  await sendPaymentFailedEmail(license.id, invoice.next_payment_attempt ?? null)
+}
+
 export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   // En Stripe API v2026, la suscripción está en invoice.parent.subscription_details
   const subscriptionId =
@@ -173,7 +218,7 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
   const { data: license } = await supabase
     .from('licenses')
-    .select('id, license_plan_id')
+    .select('id, license_plan_id, status, user_id')
     .eq('stripe_subscription_id', subId)
     .single()
 
@@ -205,6 +250,10 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     event_type: 'renewed' as const,
     metadata: { expires_at: newExpiresAt },
   })
+
+  if (license.status === 'suspended') {
+    await sendPaymentRecoveredEmail(license.id)
+  }
 }
 
 export async function handleSubscriptionUpdated(
@@ -214,7 +263,7 @@ export async function handleSubscriptionUpdated(
 
   const { data: license } = await supabase
     .from('licenses')
-    .select('id')
+    .select('id, cancel_at_period_end')
     .eq('stripe_subscription_id', subscription.id)
     .single()
 
@@ -224,6 +273,11 @@ export async function handleSubscriptionUpdated(
     .from('licenses')
     .update({ cancel_at_period_end: subscription.cancel_at_period_end })
     .eq('id', license.id)
+
+  // Send cancellation email only when transitioning from false → true
+  if (subscription.cancel_at_period_end && !license.cancel_at_period_end) {
+    await sendSubscriptionCancelledEmail(license.id)
+  }
 }
 
 export async function handleSubscriptionDeleted(

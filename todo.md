@@ -40,63 +40,20 @@
 - [x] Fix precio de plan se mostraba 100x más barato en vista admin (doble división por 100 en PlansManager)
 - [x] Fix LicenseCard mostraba "Expires" para suscripciones activas en lugar de "Renews" / "Cancels"
 - [x] Descartar licencias gratuitas desde el dashboard de usuario (botón Discard + filtro revoked en lista)
+- [x] Sistema de trials mejorado: 1 trial por cuenta (histórico), planes de suscripción con trial nativo de Stripe (tarjeta upfront, cobro automático al terminar)
+- [x] Normalizar comportamiento de trials: 1 por cuenta, no descartables, "Trial used" en store, toast de error correcto
+- [x] Eliminar feature "Discard license" (no existe en la industria): removidos DiscardLicenseButton, API route, y filtro revoked del dashboard
+- [x] Fix: expires_at check en ownedPlanIds query (trials expirados no bloqueaban la compra en product page)
+- [x] Webhook invoice.payment_failed → licencia suspendida + banner amarillo en dashboard
+- [x] Emails transaccionales (Resend + React Email): payment_failed, payment_recovered, subscription_cancelled, trial_expiring_soon
+- [x] Supabase Edge Function cron (diario 09:00 UTC): aviso de trial que expira en 3 días
+- [x] Ocultar licencias del dashboard: botón "Hide / Restore" en detalle, filtro hidden + "Show N hidden" en lista
 
 ---
 
 ## Pendiente
 
 - [ ] Implementar course viewer (DB migration, curriculum builder en admin, player en dashboard)
-- [ ] Diseñar e implementar sistema de trials con tarjeta de crédito (cobro automático al terminar, conversión vs. friction, anti-abuse),ahora los trial se pueden "comprar", antes de que terminen se pueden descartar y entonces los podes vovler a comprar, esto lo podes hacer infinitas veces, la idea de los trial es que sean una vez por cuenta, y estaria bueno que incluso haya un metodo para que alguien no pueda crearse 10 cuentas diferentes y usar el trial 10 veces
-
+- [ ] Cuando estoy creando un plan, como elijo el trial para los planes de suscripcion?
+edge function falta schedule
 ---
-
-Capa 1 — El problema actual (mismo usuario, misma cuenta)
-Hoy el flujo es:
-
-Usuario toma trial → licencia type: trial, status: trial
-Descarta → status: revoked
-Vuelve a "comprar" el trial → nueva licencia type: trial, status: trial
-Infinitamente
-El fix es simple: antes de crear un trial, el check actual busca licencias con status IN ('active', 'trial'). Habría que cambiar eso para trials: verificar si el usuario ya tuvo alguna vez (cualquier status) una licencia de ese plan con type = 'trial'. Si existe una sola en la historia → bloqueado.
-
-Esto resuelve el abuso de misma cuenta sin tocar nada más.
-
-Capa 2 — Múltiples cuentas (persona distinta, emails distintos)
-Acá hay un espectro de soluciones con sus trade-offs:
-
-Método	Efectividad	Fricción para el usuario legítimo
-Bloqueo de emails desechables (mailinator, etc.)	Baja — trivial de evadir con Gmail alias	Ninguna
-Rate limiting por IP	Baja — VPN resuelve en 30 segundos	Ninguna para usuarios normales
-Verificación de teléfono	Alta — conseguir 10 SIMs es caro	Media (molesta un poco)
-Tarjeta de crédito upfront	Muy alta — Stripe detecta la misma tarjeta	Ninguna extra si el trial es gratis
-FingerprintJS (device ID)	Media — evadible con modo incógnito	Ninguna
-La realidad: la mayoría de los SaaS simplemente no lo resuelve del todo. El porcentaje de personas que crean 10 cuentas para abusar de un trial es tan pequeño que el costo de bloquearlos (fricción para usuarios legítimos, desarrollo, mantenimiento) generalmente supera el beneficio.
-
-La solución más efectiva sin fricción real es la tarjeta upfront, porque Stripe asocia la tarjeta a un customer — dos trials con la misma tarjeta son detectables.
-
-Capa 3 — Trial con tarjeta (cobro automático)
-Esta es la decisión más importante porque cambia el modelo de negocio:
-
-Modelo actual: Trial = plan separado, sin Stripe, el usuario decide si compra otro plan al terminar.
-
-Modelo Stripe nativo: Trial = entrada a una suscripción. El usuario da su tarjeta, no se le cobra durante X días, al terminar Stripe cobra automáticamente y la suscripción arranca.
-
-Stripe soporta esto nativamente con subscription_data: { trial_period_days: X } en el Checkout Session. Al terminar el trial, dispara customer.subscription.updated y luego, si no cancela, invoice.payment_succeeded.
-
-Datos de conversión (industria):
-
-Sin tarjeta upfront: 1-5% de trials convierte a pago
-Con tarjeta upfront: 15-40% convierte (la gente que da la tarjeta ya está comprometida, y la inercia hace que muchos no cancelen)
-La pregunta clave: ¿Para qué tipos de plan tiene sentido?
-
-Subscription + trial con tarjeta → 100% natural, Stripe lo maneja nativo
-Perpetual + trial con tarjeta → raro, Stripe no tiene soporte nativo para "cobrar un único pago al terminar el trial"; habría que implementarlo manualmente (muy complejo)
-Trial standalone sin cobro → lo que tenemos hoy; sigue teniendo sentido como "prueba gratuita sin compromiso"
-Preguntas para definir el camino
-Antes de proponer una implementación concreta necesito que definas:
-
-¿El trial siempre va ligado a un plan de suscripción, o también querés trials para planes perpetuos? (esto cambia mucho la arquitectura)
-
-¿Querés el modelo "tarjeta upfront + cobro automático" o preferís mantener el trial sin tarjeta pero que sea una sola vez por cuenta? (dos objetivos distintos, pueden coexistir pero son implementaciones separadas)
-
-Para el abuso de múltiples cuentas: ¿te alcanza con bloqueo por email desechable + fix de misma cuenta, o querés algo más robusto?

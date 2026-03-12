@@ -12,6 +12,7 @@ interface PlanCardProps {
   isSelected?: boolean
   isPurchasing?: boolean
   isOwned?: boolean
+  isTrialUsed?: boolean
 }
 
 const PLAN_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
@@ -20,28 +21,36 @@ const PLAN_BADGE: Record<string, { label: string; variant: 'default' | 'secondar
   trial: { label: 'Free Trial', variant: 'outline' },
 }
 
-export default function PlanCard({ plan, onSelect, isSelected, isPurchasing, isOwned }: PlanCardProps) {
+export default function PlanCard({ plan, onSelect, isSelected, isPurchasing, isOwned, isTrialUsed }: PlanCardProps) {
   const badge = PLAN_BADGE[plan.type] ?? { label: plan.type, variant: 'outline' as const }
   const features = Array.isArray(plan.features) ? (plan.features as string[]) : []
 
   const intervalLabel = plan.billing_interval === 'year' ? '/yr' : '/mo'
+  const hasStripeTrial = plan.type === 'subscription' && !!plan.trial_days && plan.trial_days > 0
+
   const priceLabel =
-    plan.price === 0
-      ? 'Free'
-      : plan.type === 'subscription'
-        ? `${formatCurrency(plan.price)}${intervalLabel}`
-        : formatCurrency(plan.price)
+    plan.price === 0 ? 'Free'
+    : hasStripeTrial ? `Free for ${plan.trial_days} days`
+    : plan.type === 'subscription' ? `${formatCurrency(plan.price)}${intervalLabel}`
+    : formatCurrency(plan.price)
+
+  const priceSublabel = hasStripeTrial ? `then ${formatCurrency(plan.price)}${intervalLabel}` : null
 
   const buttonLabel = (() => {
     if (isPurchasing && isSelected) return 'Processing…'
+    if (hasStripeTrial) return `Start ${plan.trial_days}-day free trial`
     if (plan.type === 'trial') return plan.trial_days ? `Start free trial — ${plan.trial_days} days` : 'Start free trial'
     if (plan.price === 0) return 'Get for free'
     if (plan.type === 'subscription') return `Subscribe — ${formatCurrency(plan.price)}${intervalLabel}`
     return `Buy now — ${formatCurrency(plan.price)}`
   })()
 
+  const displayBadge = hasStripeTrial ? { label: 'Free Trial', variant: 'outline' as const } : badge
+
   const cardClass = isOwned
     ? 'flex flex-col transition-all border-green-500 ring-1 ring-green-500'
+    : isTrialUsed
+    ? 'flex flex-col transition-all opacity-60'
     : `flex flex-col transition-all ${isSelected ? 'border-primary ring-1 ring-primary' : ''}`
 
   return (
@@ -51,11 +60,14 @@ export default function PlanCard({ plan, onSelect, isSelected, isPurchasing, isO
           <CardTitle className="text-lg">{plan.name}</CardTitle>
           {isOwned
             ? <Badge className="bg-green-500/15 text-green-600 border-green-500/30">Active</Badge>
-            : <Badge variant={badge.variant}>{badge.label}</Badge>
+            : isTrialUsed
+            ? <Badge variant="secondary" className="text-muted-foreground">Trial used</Badge>
+            : <Badge variant={displayBadge.variant}>{displayBadge.label}</Badge>
           }
         </div>
         <CardDescription>
           <span className="text-2xl font-bold text-foreground">{priceLabel}</span>
+          {priceSublabel && <span className="text-sm text-muted-foreground ml-2">{priceSublabel}</span>}
         </CardDescription>
       </CardHeader>
 
@@ -80,6 +92,10 @@ export default function PlanCard({ plan, onSelect, isSelected, isPurchasing, isO
         {isOwned ? (
           <Button className="w-full" variant="secondary" asChild>
             <Link href="/dashboard/licenses">Manage license →</Link>
+          </Button>
+        ) : isTrialUsed ? (
+          <Button className="w-full" variant="outline" disabled>
+            Trial already used
           </Button>
         ) : (
           <Button

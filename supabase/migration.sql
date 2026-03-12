@@ -304,3 +304,6 @@ alter table products
 
 -- Sesión 12: cancelación de suscripciones por el usuario
 ALTER TABLE licenses ADD COLUMN IF NOT EXISTS cancel_at_period_end boolean NOT NULL DEFAULT false;
+
+-- Sesión 18: ocultar licencias del dashboard (hide/archive)
+ALTER TABLE licenses ADD COLUMN IF NOT EXISTS hidden boolean NOT NULL DEFAULT false;

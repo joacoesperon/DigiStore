@@ -10,9 +10,10 @@ interface PlanSelectorProps {
   plans: LicensePlan[]
   productId: string
   ownedPlanIds?: string[]
+  usedTrialPlanIds?: string[]
 }
 
-export default function PlanSelector({ plans, productId, ownedPlanIds = [] }: PlanSelectorProps) {
+export default function PlanSelector({ plans, productId, ownedPlanIds = [], usedTrialPlanIds = [] }: PlanSelectorProps) {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [isPurchasing, setIsPurchasing] = useState(false)
   const router = useRouter()
@@ -40,7 +41,8 @@ export default function PlanSelector({ plans, productId, ownedPlanIds = [] }: Pl
       }
 
       if (res.status === 409) {
-        toast.error('You already have an active license for this plan')
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error ?? 'You already have an active license for this plan')
         router.push('/dashboard/licenses')
         return
       }
@@ -68,6 +70,7 @@ export default function PlanSelector({ plans, productId, ownedPlanIds = [] }: Pl
 
   function handleSelect(planId: string) {
     if (ownedPlanIds.includes(planId)) return
+    if (usedTrialPlanIds.includes(planId)) return
     setSelectedPlanId(planId)
   }
 
@@ -89,10 +92,11 @@ export default function PlanSelector({ plans, productId, ownedPlanIds = [] }: Pl
             isSelected={selectedPlanId === plan.id}
             isPurchasing={isPurchasing}
             isOwned={ownedPlanIds.includes(plan.id)}
+            isTrialUsed={usedTrialPlanIds.includes(plan.id) && !ownedPlanIds.includes(plan.id)}
           />
         ))}
       </div>
-      {selectedPlanId && !ownedPlanIds.includes(selectedPlanId) && (
+      {selectedPlanId && !ownedPlanIds.includes(selectedPlanId) && !usedTrialPlanIds.includes(selectedPlanId) && (
         <div className="flex justify-end">
           <button
             onClick={handlePurchase}

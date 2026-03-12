@@ -53,21 +53,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
   }
 
-  // 4. Verificar que el usuario no tenga ya una licencia activa para este plan
+  // 4. Verificar que el usuario no tenga ya una licencia para este plan
   const supabaseAdmin = createAdminClient()
-  const { data: existingLicense } = await supabaseAdmin
-    .from('licenses')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('license_plan_id', planId)
-    .in('status', ['active', 'trial'])
-    .maybeSingle()
 
-  if (existingLicense) {
-    return NextResponse.json(
-      { error: 'You already have an active license for this plan' },
-      { status: 409 }
-    )
+  if (plan.type === 'trial') {
+    // Trials: bloquear si el usuario ya tuvo alguna vez este trial (cualquier status)
+    const { data: anyTrialLicense } = await supabaseAdmin
+      .from('licenses')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('license_plan_id', planId)
+      .eq('type', 'trial')
+      .maybeSingle()
+
+    if (anyTrialLicense) {
+      return NextResponse.json(
+        { error: 'You have already used your trial for this plan' },
+        { status: 409 }
+      )
+    }
+  } else {
+    // Otros planes: bloquear si ya hay una licencia activa o en trial
+    const { data: existingLicense } = await supabaseAdmin
+      .from('licenses')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('license_plan_id', planId)
+      .in('status', ['active', 'trial'])
+      .maybeSingle()
+
+    if (existingLicense) {
+      return NextResponse.json(
+        { error: 'You already have an active license for this plan' },
+        { status: 409 }
+      )
+    }
   }
 
   // 5. Handle free plan — no Stripe needed
@@ -164,9 +184,11 @@ export async function POST(request: Request) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
 
   const isSubscription = plan.type === 'subscription'
+  const hasStripeTrial = isSubscription && !!plan.trial_days && plan.trial_days > 0
 
   const session = await stripe.checkout.sessions.create({
     mode: isSubscription ? 'subscription' : 'payment',
+    payment_method_collection: hasStripeTrial ? 'always' : undefined,
     line_items: [
       {
         price_data: {
@@ -184,6 +206,9 @@ export async function POST(request: Request) {
         quantity: 1,
       },
     ],
+    ...(hasStripeTrial && {
+      subscription_data: { trial_period_days: plan.trial_days! },
+    }),
     success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl}/checkout/cancel`,
     customer_email: user.email,

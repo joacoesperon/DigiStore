@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import LicenseKeyDisplay from '@/components/licenses/LicenseKeyDisplay'
 import ActivationList from '@/components/licenses/ActivationList'
 import CancelSubscriptionButton from '@/components/licenses/CancelSubscriptionButton'
-import DiscardLicenseButton from '@/components/licenses/DiscardLicenseButton'
+import HideLicenseButton from '@/components/licenses/HideLicenseButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,6 +43,7 @@ export default async function LicenseDetailPage({
   const license = data as unknown as LicenseWithActivations & {
     products: { file_path: string | null; type: ProductType; slug: string }
     cancel_at_period_end: boolean
+    hidden: boolean
   }
 
   const productType: ProductType = license.products.type
@@ -87,6 +88,17 @@ export default async function LicenseDetailPage({
             Your subscription is scheduled to cancel on{' '}
             <strong>{formatDate(license.expires_at)}</strong>.
             You&apos;ll keep full access until then.
+          </p>
+        </div>
+      )}
+
+      {/* Payment failed banner */}
+      {license.status === 'suspended' && (
+        <div className="flex items-start gap-3 rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <p>
+            A recent payment failed. Stripe will retry automatically — your access is maintained in the meantime.
+            Please update your payment method in your bank or card settings if needed.
           </p>
         </div>
       )}
@@ -172,10 +184,10 @@ export default async function LicenseDetailPage({
         />
       )}
 
-      {/* Discard — solo para licencias gratuitas (sin Stripe) activas o en trial */}
-      {!license.stripe_subscription_id && isActive && (
-        <DiscardLicenseButton licenseId={license.id} />
-      )}
+      {/* Hide / restore from dashboard */}
+      <div className="flex justify-end">
+        <HideLicenseButton licenseId={license.id} hidden={license.hidden} />
+      </div>
 
       {/* Active Devices — software only */}
       {isSoftware && (
