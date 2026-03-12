@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import LicenseKeyDisplay from '@/components/licenses/LicenseKeyDisplay'
 import ActivationList from '@/components/licenses/ActivationList'
 import CancelSubscriptionButton from '@/components/licenses/CancelSubscriptionButton'
+import DiscardLicenseButton from '@/components/licenses/DiscardLicenseButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -162,13 +163,18 @@ export default async function LicenseDetailPage({
         </CardContent>
       </Card>
 
-      {/* Cancel / reactivate subscription */}
-      {isSubscription && isActive && (
+      {/* Cancel / reactivate subscription — solo si hay Stripe subscription asociada */}
+      {isSubscription && isActive && license.stripe_subscription_id && (
         <CancelSubscriptionButton
           licenseId={license.id}
           cancelAtPeriodEnd={license.cancel_at_period_end}
           expiresAt={license.expires_at}
         />
+      )}
+
+      {/* Discard — solo para licencias gratuitas (sin Stripe) activas o en trial */}
+      {!license.stripe_subscription_id && isActive && (
+        <DiscardLicenseButton licenseId={license.id} />
       )}
 
       {/* Active Devices — software only */}

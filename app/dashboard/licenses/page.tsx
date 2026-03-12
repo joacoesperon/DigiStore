@@ -11,6 +11,7 @@ export default async function LicensesPage() {
     .from('licenses')
     .select('*, products(id, name, slug, thumbnail_url, type), license_plans(id, name, type, billing_interval)')
     .eq('user_id', user!.id)
+    .neq('status', 'revoked')
     .order('created_at', { ascending: false })
 
   const licenses = (data ?? []) as LicenseWithProduct[]

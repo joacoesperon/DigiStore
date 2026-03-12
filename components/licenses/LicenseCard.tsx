@@ -33,6 +33,15 @@ export default function LicenseCard({ license }: LicenseCardProps) {
     ? `${license.activation_count} / ${license.max_activations} activations`
     : PRODUCT_TYPE_HINT[productType] ?? ''
 
+  const isSubscription = license.type === 'subscription'
+  const isActive = license.status === 'active'
+  const expiresLabel =
+    isSubscription && isActive && !license.cancel_at_period_end
+      ? 'Renews'
+      : isSubscription && license.cancel_at_period_end
+      ? 'Cancels'
+      : 'Expires'
+
   return (
     <Link href={`/dashboard/licenses/${license.id}`} className="group">
       <Card className="h-full transition-shadow hover:shadow-md">
@@ -55,7 +64,9 @@ export default function LicenseCard({ license }: LicenseCardProps) {
           {license.expires_at && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" />
-              <span>Expires {formatDate(license.expires_at)}</span>
+              <span className={license.cancel_at_period_end ? 'text-orange-600' : ''}>
+                {expiresLabel} {formatDate(license.expires_at)}
+              </span>
             </div>
           )}
           <div className="flex justify-end pt-1">

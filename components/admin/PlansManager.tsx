@@ -115,7 +115,7 @@ export default function PlansManager({
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-lg">
-                    {plan.price === 0 ? 'Gratis' : formatCurrency(plan.price / 100)}
+                    {plan.price === 0 ? 'Gratis' : formatCurrency(plan.price)}
                   </p>
                   {plan.billing_interval && (
                     <p className="text-xs text-muted-foreground">
