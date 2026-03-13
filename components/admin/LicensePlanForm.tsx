@@ -187,24 +187,32 @@ export default function LicensePlanForm({ plan, onSubmit, onCancel }: LicensePla
             />
           )}
 
-          {/* Trial days (trial only) */}
-          {watchType === 'trial' && (
+          {/* Trial days (trial standalone, or optional trial for subscription) */}
+          {(watchType === 'trial' || watchType === 'subscription') && (
             <FormField
               control={form.control}
               name="trial_days"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Días de prueba</FormLabel>
+                  <FormLabel>
+                    {watchType === 'subscription' ? 'Días gratis antes del primer cobro (opcional)' : 'Días de prueba'}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min="1"
                       max="365"
+                      placeholder={watchType === 'subscription' ? 'Ej: 7, 14, 30…' : ''}
                       {...field}
                       value={field.value ?? ''}
                       onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
                     />
                   </FormControl>
+                  {watchType === 'subscription' && (
+                    <p className="text-xs text-muted-foreground">
+                      Se solicita tarjeta al registrarse. El cobro inicia al terminar el período de prueba.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

@@ -48,12 +48,13 @@
 - [x] Emails transaccionales (Resend + React Email): payment_failed, payment_recovered, subscription_cancelled, trial_expiring_soon
 - [x] Supabase Edge Function cron (diario 09:00 UTC): aviso de trial que expira en 3 días
 - [x] Ocultar licencias del dashboard: botón "Hide / Restore" en detalle, filtro hidden + "Show N hidden" en lista
+- [x] Campo "Días gratis antes del primer cobro" en formulario de plan tipo suscripción
+- [x] Sesión 21 — Course viewer: DB migration, curriculum builder en admin, player en dashboard con tracking de progreso
 
 ---
 
 ## Pendiente
 
-- [ ] Implementar course viewer (DB migration, curriculum builder en admin, player en dashboard)
-- [ ] Cuando estoy creando un plan, como elijo el trial para los planes de suscripcion?
-edge function falta schedule
+- [ ] El texto de las lecciones de los cursos es texto plano o farmto markdown? como lo hace la indutria? se puede hacer que se pueda subir un fichero por leccion? tipo si quiero subir un pdf ademas del video?
+
 ---

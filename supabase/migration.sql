@@ -307,3 +307,60 @@ ALTER TABLE licenses ADD COLUMN IF NOT EXISTS cancel_at_period_end boolean NOT N
 
 -- Sesión 18: ocultar licencias del dashboard (hide/archive)
 ALTER TABLE licenses ADD COLUMN IF NOT EXISTS hidden boolean NOT NULL DEFAULT false;
+
+-- Sesión 21: course viewer (módulos, lecciones, progreso)
+CREATE TABLE IF NOT EXISTS course_modules (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id uuid NOT NULL REFERENCES products ON DELETE CASCADE,
+  title      text NOT NULL,
+  position   integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS course_lessons (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  module_id  uuid NOT NULL REFERENCES course_modules ON DELETE CASCADE,
+  product_id uuid NOT NULL REFERENCES products ON DELETE CASCADE,
+  title      text NOT NULL,
+  video_url  text,
+  content    text,
+  position   integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS course_progress (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+  lesson_id    uuid NOT NULL REFERENCES course_lessons ON DELETE CASCADE,
+  product_id   uuid NOT NULL REFERENCES products ON DELETE CASCADE,
+  completed_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(user_id, lesson_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_course_modules_product    ON course_modules(product_id);
+CREATE INDEX IF NOT EXISTS idx_course_lessons_module     ON course_lessons(module_id);
+CREATE INDEX IF NOT EXISTS idx_course_lessons_product    ON course_lessons(product_id);
+CREATE INDEX IF NOT EXISTS idx_course_progress_user_prod ON course_progress(user_id, product_id);
+
+ALTER TABLE course_modules  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE course_lessons  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE course_progress ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admin manages course_modules"
+  ON course_modules FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Authenticated users read course_modules"
+  ON course_modules FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admin manages course_lessons"
+  ON course_lessons FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Authenticated users read course_lessons"
+  ON course_lessons FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admin reads all course_progress"
+  ON course_progress FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Users manage own course_progress"
+  ON course_progress FOR ALL USING (user_id = auth.uid());

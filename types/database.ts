@@ -526,6 +526,128 @@ export type Database = {
           }
         ]
       }
+      course_modules: {
+        Row: {
+          id: string
+          product_id: string
+          title: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          title: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          title?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'course_modules_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      course_lessons: {
+        Row: {
+          id: string
+          module_id: string
+          product_id: string
+          title: string
+          video_url: string | null
+          content: string | null
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          module_id: string
+          product_id: string
+          title: string
+          video_url?: string | null
+          content?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          module_id?: string
+          product_id?: string
+          title?: string
+          video_url?: string | null
+          content?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'course_lessons_module_id_fkey'
+            columns: ['module_id']
+            isOneToOne: false
+            referencedRelation: 'course_modules'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'course_lessons_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      course_progress: {
+        Row: {
+          id: string
+          user_id: string
+          lesson_id: string
+          product_id: string
+          completed_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lesson_id: string
+          product_id: string
+          completed_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          lesson_id?: string
+          product_id?: string
+          completed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'course_progress_lesson_id_fkey'
+            columns: ['lesson_id']
+            isOneToOne: false
+            referencedRelation: 'course_lessons'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'course_progress_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {

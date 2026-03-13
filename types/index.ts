@@ -12,6 +12,9 @@ export type LicenseActivation = Database['public']['Tables']['license_activation
 export type LicenseEvent = Database['public']['Tables']['license_events']['Row']
 export type Coupon = Database['public']['Tables']['coupons']['Row']
 export type Review = Database['public']['Tables']['reviews']['Row']
+export type CourseModule = Database['public']['Tables']['course_modules']['Row']
+export type CourseLesson = Database['public']['Tables']['course_lessons']['Row']
+export type CourseProgress = Database['public']['Tables']['course_progress']['Row']
 
 // ─── Domain union types ───────────────────────────────────────────────────────
 
@@ -45,6 +48,10 @@ export type OrderWithItems = Order & {
     products: Pick<Product, 'id' | 'name' | 'slug' | 'thumbnail_url'>
     license_plans: Pick<LicensePlan, 'id' | 'name' | 'type'>
   })[]
+}
+
+export type ModuleWithLessons = CourseModule & {
+  course_lessons: CourseLesson[]
 }
 
 // ─── API v1 response types ────────────────────────────────────────────────────

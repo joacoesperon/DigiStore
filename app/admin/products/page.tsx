@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, PackageIcon, Pencil, LayoutList } from 'lucide-react'
+import { Plus, PackageIcon, Pencil, LayoutList, BookOpen } from 'lucide-react'
 import { PRODUCT_TYPE_LABELS } from '@/types'
 import type { Product } from '@/types'
 
@@ -97,6 +97,14 @@ export default async function AdminProductsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {product.type === 'course' && (
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/products/${product.id}/curriculum`}>
+                              <BookOpen className="h-4 w-4" />
+                              Curriculum
+                            </Link>
+                          </Button>
+                        )}
                         <Button asChild variant="ghost" size="sm">
                           <Link href={`/admin/products/${product.id}/plans`}>
                             <LayoutList className="h-4 w-4" />
