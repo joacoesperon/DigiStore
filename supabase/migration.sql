@@ -364,3 +364,6 @@ CREATE POLICY "Admin reads all course_progress"
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 CREATE POLICY "Users manage own course_progress"
   ON course_progress FOR ALL USING (user_id = auth.uid());
+
+-- Sesión 22: archivo adjunto por lección
+ALTER TABLE course_lessons ADD COLUMN IF NOT EXISTS file_path TEXT;

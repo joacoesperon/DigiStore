@@ -5,6 +5,7 @@ import {
   sendPaymentFailedEmail,
   sendPaymentRecoveredEmail,
   sendSubscriptionCancelledEmail,
+  sendPurchaseConfirmationEmail,
 } from '@/lib/email/send'
 import type Stripe from 'stripe'
 import { addDays, addMonths, addYears } from 'date-fns'
@@ -164,6 +165,14 @@ export async function handleCheckoutSessionCompleted(
       p_coupon_id: meta.coupon_id,
     })
   }
+
+  // Enviar email de confirmación de compra (best effort)
+  sendPurchaseConfirmationEmail(
+    license.id,
+    session.amount_total ?? plan.price,
+    licenseStatus === 'trial' ? 'trial' : (plan.type as 'perpetual' | 'subscription'),
+    expiresAt
+  ).catch(() => {})
 }
 
 export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {

@@ -255,3 +255,65 @@ export function TrialExpiringSoonEmail({
     </Html>
   )
 }
+
+// ─────────────────────────────────────────────
+// Purchase Confirmation
+// ─────────────────────────────────────────────
+
+export interface PurchaseConfirmationProps {
+  productName: string
+  planName: string
+  planType: 'perpetual' | 'subscription' | 'trial'
+  amountPaid: string
+  userName: string | null
+  dashboardUrl: string
+  expiresAt: string | null
+}
+
+export function PurchaseConfirmationEmail({
+  productName,
+  planName,
+  planType,
+  amountPaid,
+  userName,
+  dashboardUrl,
+  expiresAt,
+}: PurchaseConfirmationProps) {
+  const firstName = userName?.split(' ')[0] ?? null
+  return (
+    <Html>
+      <Head />
+      <Preview>Your {productName} purchase is confirmed</Preview>
+      <Body style={baseStyle}>
+        <Container style={container}>
+          <Heading style={heading}>Order confirmed</Heading>
+          <Text style={text}>Hi {firstName ?? 'there'},</Text>
+          <Text style={text}>
+            Your purchase of <strong>{productName}</strong> ({planName}) has been processed successfully.
+          </Text>
+          <Text style={muted}>Amount charged: {amountPaid}</Text>
+          <Hr style={hr} />
+          {planType === 'trial' && expiresAt ? (
+            <Text style={text}>
+              Your free trial is now active. Your card will be charged automatically on{' '}
+              <strong>{expiresAt}</strong>. You can cancel any time before that date.
+            </Text>
+          ) : planType === 'subscription' ? (
+            <Text style={text}>
+              Your subscription is active and will renew automatically.
+            </Text>
+          ) : (
+            <Text style={text}>
+              You have lifetime access to this product.
+            </Text>
+          )}
+          <Section style={{ textAlign: 'center', marginTop: '24px' }}>
+            <Button href={dashboardUrl} style={button}>Go to your dashboard</Button>
+          </Section>
+          <Hr style={hr} />
+          <Text style={muted}>{APP_NAME} · You received this because you made a purchase.</Text>
+        </Container>
+      </Body>
+    </Html>
+  )
+}

@@ -7,7 +7,9 @@ import {
   SubscriptionCancelledEmail,
   TrialExpiredEmail,
   TrialExpiringSoonEmail,
+  PurchaseConfirmationEmail,
 } from './templates'
+import { formatCurrency } from '@/lib/utils/formatters'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
@@ -37,7 +39,7 @@ async function getEmailData(licenseId: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email')
+    .select('email, full_name')
     .eq('id', data.user_id)
     .single()
 
@@ -45,6 +47,7 @@ async function getEmailData(licenseId: string) {
 
   return {
     email: profile.email as string,
+    fullName: (profile.full_name as string | null) ?? null,
     productName: products?.name ?? 'Product',
     planName: license_plans?.name ?? 'Plan',
     productSlug: products?.slug ?? '',
@@ -198,5 +201,43 @@ export async function sendTrialExpiringEmail(licenseId: string, daysLeft: number
     })
   } catch (err) {
     console.error('[email] sendTrialExpiringEmail failed:', err)
+  }
+}
+
+export async function sendPurchaseConfirmationEmail(
+  licenseId: string,
+  amountPaidCents: number,
+  planType: 'perpetual' | 'subscription' | 'trial',
+  expiresAt: string | null
+) {
+  if (!process.env.RESEND_API_KEY) return
+  try {
+    const d = await getEmailData(licenseId)
+    if (!d) return
+
+    const dashboardUrl = `${SITE_URL}/dashboard/licenses/${licenseId}`
+    const amountPaid = amountPaidCents === 0 ? 'Free (trial)' : formatCurrency(amountPaidCents)
+    const expiresFormatted = expiresAt ? fmtDate(expiresAt) : null
+
+    const html = await render(
+      <PurchaseConfirmationEmail
+        productName={d.productName}
+        planName={d.planName}
+        planType={planType}
+        amountPaid={amountPaid}
+        userName={d.fullName}
+        dashboardUrl={dashboardUrl}
+        expiresAt={expiresFormatted}
+      />
+    )
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: d.email,
+      subject: `Your ${d.productName} purchase is confirmed`,
+      html,
+    })
+  } catch (err) {
+    console.error('[email] sendPurchaseConfirmationEmail failed:', err)
   }
 }

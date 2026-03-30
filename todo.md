@@ -50,11 +50,17 @@
 - [x] Ocultar licencias del dashboard: botón "Hide / Restore" en detalle, filtro hidden + "Show N hidden" en lista
 - [x] Campo "Días gratis antes del primer cobro" en formulario de plan tipo suscripción
 - [x] Sesión 21 — Course viewer: DB migration, curriculum builder en admin, player en dashboard con tracking de progreso
+- [x] Sesión 22 — Lecciones con Markdown (react-markdown + remark-gfm + @tailwindcss/typography) y archivos adjuntos por lección (upload en admin, descarga firmada con verificación de licencia en viewer)
+- [x] Sesión 23 — Email de confirmación de compra (receipt post-checkout; template PurchaseConfirmationEmail, getEmailData extendida con full_name, disparado desde handleCheckoutSessionCompleted)
 
 ---
 
 ## Pendiente
 
-- [ ] El texto de las lecciones de los cursos es texto plano o farmto markdown? como lo hace la indutria? se puede hacer que se pueda subir un fichero por leccion? tipo si quiero subir un pdf ademas del video?
+- [ ] Formulario de reseñas para usuarios — en `/products/[slug]` (tras compra) y/o en dashboard
+- [ ] Admin reviews: botón Rechazar/Eliminar (actualmente solo existe Approve)
+- [ ] Admin customers: página de detalle por cliente (licencias + órdenes)
+- [ ] Gráficas de revenue en admin — evolución temporal de ingresos
+- [ ] Filtros/búsqueda en catálogo público `/products` — por tipo, nombre
 
 ---

@@ -94,6 +94,7 @@ export default async function CurriculumPage({
     title: string
     video_url: string | null
     content: string | null
+    file_path: string | null
   }
 
   async function createLesson(moduleId: string, values: LessonValues): Promise<{ error?: string }> {
@@ -112,6 +113,7 @@ export default async function CurriculumPage({
       title: values.title.trim(),
       video_url: values.video_url || null,
       content: values.content || null,
+      file_path: values.file_path || null,
       position: nextPos,
     })
     return { error: error?.message }
@@ -125,6 +127,7 @@ export default async function CurriculumPage({
         title: values.title.trim(),
         video_url: values.video_url || null,
         content: values.content || null,
+        file_path: values.file_path || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -134,7 +137,19 @@ export default async function CurriculumPage({
 
   async function deleteLesson(id: string): Promise<{ error?: string }> {
     'use server'
-    const { error } = await createAdminClient()
+    const admin = createAdminClient()
+    // Clean up storage file if one exists
+    const { data: lesson } = await admin
+      .from('course_lessons')
+      .select('file_path')
+      .eq('id', id)
+      .eq('product_id', productId)
+      .single()
+    if (lesson?.file_path) {
+      const svc = createServiceClient()
+      await svc.storage.from('product-files').remove([lesson.file_path])
+    }
+    const { error } = await admin
       .from('course_lessons')
       .delete()
       .eq('id', id)

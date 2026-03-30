@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,6 +18,7 @@ import {
   BookOpen,
   X,
   Check,
+  Paperclip,
 } from 'lucide-react'
 import type { ModuleWithLessons, CourseLesson } from '@/types'
 
@@ -23,6 +26,7 @@ interface LessonValues {
   title: string
   video_url: string | null
   content: string | null
+  file_path: string | null
 }
 
 interface Props {
@@ -49,13 +53,46 @@ function LessonForm({
   const [title, setTitle] = useState(initial?.title ?? '')
   const [videoUrl, setVideoUrl] = useState(initial?.video_url ?? '')
   const [content, setContent] = useState(initial?.content ?? '')
+  const [filePath, setFilePath] = useState<string | null>(initial?.file_path ?? null)
+  const [tempLessonId] = useState<string>(() => initial?.id ?? crypto.randomUUID())
+  const [uploading, setUploading] = useState(false)
+  const [previewMd, setPreviewMd] = useState(false)
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
     if (!title.trim()) return
     setSaving(true)
-    await onSave({ title, video_url: videoUrl || null, content: content || null })
+    await onSave({ title, video_url: videoUrl || null, content: content || null, file_path: filePath })
     setSaving(false)
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('lessonId', tempLessonId)
+    if (filePath) fd.append('currentFilePath', filePath)
+    const res = await fetch('/api/admin/lesson-upload', { method: 'POST', body: fd })
+    if (res.ok) {
+      const data = await res.json()
+      setFilePath(data.path)
+    } else {
+      toast.error('Error al subir el archivo')
+    }
+    setUploading(false)
+    e.target.value = ''
+  }
+
+  async function handleRemoveFile() {
+    if (!filePath) return
+    await fetch('/api/admin/lesson-upload', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath }),
+    })
+    setFilePath(null)
   }
 
   return (
@@ -71,13 +108,61 @@ function LessonForm({
         value={videoUrl}
         onChange={(e) => setVideoUrl(e.target.value)}
       />
-      <textarea
-        placeholder="Contenido / descripción (opcional)"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={3}
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
-      />
+
+      {/* Content with markdown preview toggle */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Contenido (Markdown)</span>
+          <button
+            type="button"
+            onClick={() => setPreviewMd(!previewMd)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {previewMd ? 'Editar' : 'Vista previa'}
+          </button>
+        </div>
+        {previewMd ? (
+          <div className="prose prose-sm max-w-none border rounded-md px-3 py-2 bg-background min-h-[5rem] dark:prose-invert">
+            {content
+              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              : <span className="text-muted-foreground text-sm italic">Sin contenido</span>
+            }
+          </div>
+        ) : (
+          <textarea
+            placeholder="Contenido en Markdown (opcional) — soporta **negrita**, `código`, listas, etc."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={3}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        )}
+      </div>
+
+      {/* File attachment */}
+      <div className="space-y-1">
+        <span className="text-xs text-muted-foreground">Archivo adjunto (opcional)</span>
+        {filePath ? (
+          <div className="flex items-center gap-2 text-sm border rounded-md p-2 bg-background">
+            <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="truncate flex-1 text-xs">{filePath.split('/').pop()}</span>
+            <button
+              type="button"
+              onClick={handleRemoveFile}
+              className="text-destructive hover:opacity-70 shrink-0"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <label className={`flex items-center gap-2 text-xs border border-dashed rounded-md p-2 cursor-pointer hover:bg-muted/30 transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+            {uploading ? 'Subiendo…' : 'Adjuntar archivo (PDF, ZIP, etc.)'}
+            <input type="file" className="hidden" disabled={uploading} onChange={handleFileChange} />
+          </label>
+        )}
+      </div>
+
       <div className="flex gap-2">
         <Button size="sm" onClick={handleSave} disabled={saving || !title.trim()}>
           <Check className="h-3.5 w-3.5" />
@@ -255,6 +340,7 @@ export default function CurriculumBuilder({
                     <div className="flex gap-1 text-muted-foreground">
                       {lesson.video_url && <Video className="h-3.5 w-3.5" />}
                       {lesson.content && <FileText className="h-3.5 w-3.5" />}
+                      {lesson.file_path && <Paperclip className="h-3.5 w-3.5" />}
                     </div>
                     <span className="text-sm flex-1">{lesson.title}</span>
                     <Button

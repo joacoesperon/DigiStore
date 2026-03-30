@@ -3,8 +3,10 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Menu, X, Paperclip } from 'lucide-react'
 import { getEmbedUrl } from '@/lib/utils/course'
 import type { ModuleWithLessons, CourseLesson } from '@/types'
 
@@ -169,15 +171,28 @@ export default function CourseViewer({
             </div>
           )}
 
-          {/* Text content */}
+          {/* Text content — rendered as Markdown */}
           {currentLesson?.content && (
-            <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-              {currentLesson.content}
+            <div className="prose prose-sm max-w-none text-foreground dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {currentLesson.content}
+              </ReactMarkdown>
             </div>
           )}
 
           {!embedUrl && !currentLesson?.content && (
             <p className="text-muted-foreground text-sm">Esta lección no tiene contenido todavía.</p>
+          )}
+
+          {/* File attachment download */}
+          {currentLesson?.file_path && (
+            <a
+              href={`/api/courses/${productId}/lessons/${currentLesson.id}/download`}
+              className="inline-flex items-center gap-2 text-sm border rounded-md px-3 py-2 hover:bg-muted transition-colors"
+            >
+              <Paperclip className="h-4 w-4 text-muted-foreground" />
+              {currentLesson.file_path.split('/').pop()}
+            </a>
           )}
 
           {/* Navigation + mark complete */}

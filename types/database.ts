@@ -566,6 +566,7 @@ export type Database = {
           title: string
           video_url: string | null
           content: string | null
+          file_path: string | null
           position: number
           created_at: string
           updated_at: string
@@ -577,6 +578,7 @@ export type Database = {
           title: string
           video_url?: string | null
           content?: string | null
+          file_path?: string | null
           position?: number
           created_at?: string
           updated_at?: string
@@ -588,6 +590,7 @@ export type Database = {
           title?: string
           video_url?: string | null
           content?: string | null
+          file_path?: string | null
           position?: number
           created_at?: string
           updated_at?: string
