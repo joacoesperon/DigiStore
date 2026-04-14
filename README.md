@@ -8,7 +8,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 DigiStore es una tienda completa para **vender y entregar productos digitales**: ebooks, cursos, software, plantillas, algoritmos de trading, y cualquier archivo descargable. Los compradores acceden a sus productos a través de un dashboard personal donde pueden descargar los archivos y ver sus licencias activas.
 
-El sistema incluye además un motor de **control de licencias para software**: genera claves únicas por compra, limita el uso a un número de máquinas configurado, y expone una API pública que cualquier programa externo (Python, MQL5, etc.) puede consultar para verificar si el usuario realmente compró el software antes de dejar correr el programa.
+El reto técnico central es ofrecer un **mecanismo de entrega adaptado a cada tipo de producto** dentro de un flujo de compra unificado: para software, genera claves de licencia únicas y expone una API pública que cualquier programa externo (Python, MQL5, etc.) puede consultar para verificar la compra; para ebooks y plantillas, distribuye el archivo mediante URLs firmadas de duración limitada vinculadas a una licencia activa; para cursos, proporciona un visualizador integrado con reproducción de vídeo, contenido Markdown, archivos adjuntos y seguimiento de progreso por lección.
 
 ---
 
@@ -342,7 +342,7 @@ node scripts/load-test.mjs TU-LICENSE-KEY 20 15
 
 DigiStore es una **plataforma de venta y entrega de productos digitales**. No es un marketplace (como Gumroad o Etsy) — es una tienda privada de un solo vendedor. Un administrador gestiona el catálogo, los compradores acceden a su cuenta para descargar los productos y ver sus licencias.
 
-El diferencial técnico central es el **sistema de control de licencias**: cada compra genera una clave única (`XXXXX-XXXXX-XXXXX-XXXXX`), los productos de tipo software pueden verificar en tiempo real si el usuario realmente compró antes de ejecutarse, y el sistema limita cuántas máquinas pueden usar la misma licencia simultáneamente.
+El diferencial técnico central es la **entrega adaptativa por tipo de producto**: un mismo flujo de compra y panel de usuario soporta cuatro tipos de productos, cada uno con su propio mecanismo de distribución segura. Para software, genera claves de licencia únicas y expone una API pública de verificación remota. Para ebooks y plantillas, distribuye archivos mediante URLs firmadas de duración limitada. Para cursos, proporciona un visualizador integrado con reproducción de vídeo, Markdown, archivos adjuntos y seguimiento de progreso. Las licencias son el mecanismo de control de acceso transversal a todos los tipos, no el núcleo en sí.
 
 ---
 
