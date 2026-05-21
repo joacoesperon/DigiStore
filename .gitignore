@@ -43,3 +43,21 @@ yarn-error.log*
 next-env.d.ts
 
 .claude/
+
+# Material de trabajo personal (no académico)
+reglas.md
+diario.md
+cosas_aprender.md
+TFG/borrador_*.md
+
+# Artefactos de compilación de LaTeX
+*.aux
+*.log
+*.toc
+*.out
+*.bbl
+*.blg
+*.brf
+*.fdb_latexmk
+*.fls
+*.synctex.gz
