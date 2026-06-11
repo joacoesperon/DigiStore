@@ -52,15 +52,12 @@
 - [x] Sesión 21 — Course viewer: DB migration, curriculum builder en admin, player en dashboard con tracking de progreso
 - [x] Sesión 22 — Lecciones con Markdown (react-markdown + remark-gfm + @tailwindcss/typography) y archivos adjuntos por lección (upload en admin, descarga firmada con verificación de licencia en viewer)
 - [x] Sesión 23 — Email de confirmación de compra (receipt post-checkout; template PurchaseConfirmationEmail, getEmailData extendida con full_name, disparado desde handleCheckoutSessionCompleted)
-
----
-
-## Pendiente
-
 - [x] Formulario de reseñas para usuarios — en `/products/[slug]` (con gating por licencia)
 - [x] Admin reviews: botón Rechazar/Eliminar (junto a Approve en pendientes; columna nueva en aprobadas)
 - [x] Admin customers: página de detalle por cliente (licencias + órdenes) en `/admin/customers/[id]`
 - [x] Filtros/búsqueda en catálogo público `/products` — por tipo y por nombre (preserva `q` al cambiar tipo)
+
+## Pendiente
+
 - [ ] Gráficas de revenue en admin — evolución temporal de ingresos (trabajo futuro)
 
----

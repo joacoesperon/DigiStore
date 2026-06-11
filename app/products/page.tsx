@@ -1,6 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import ProductCard from '@/components/store/ProductCard'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { Product, LicensePlan, ProductType } from '@/types'
@@ -60,21 +59,26 @@ export default async function ProductsPage({
       </form>
 
       {/* Type filter */}
-      <div className="mb-8">
-        <Tabs defaultValue={type ?? 'all'}>
-          <TabsList>
-            <TabsTrigger value="all" asChild>
-              <a href={`/products${q ? `?q=${encodeURIComponent(q)}` : ''}`}>All</a>
-            </TabsTrigger>
-            {ALL_TYPES.map((t) => (
-              <TabsTrigger key={t} value={t} asChild>
-                <a href={`/products?type=${t}${q ? `&q=${encodeURIComponent(q)}` : ''}`}>
-                  {PRODUCT_TYPE_LABELS[t]}
-                </a>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+      <div className="mb-8 flex gap-1 flex-wrap">
+        {[{ value: 'all', label: 'All' }, ...ALL_TYPES.map((t) => ({ value: t, label: PRODUCT_TYPE_LABELS[t] }))].map(({ value, label }) => {
+          const href = value === 'all'
+            ? `/products${q ? `?q=${encodeURIComponent(q)}` : ''}`
+            : `/products?type=${value}${q ? `&q=${encodeURIComponent(q)}` : ''}`
+          const active = (value === 'all' && !type) || value === type
+          return (
+            <a
+              key={value}
+              href={href}
+              className={`inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                active
+                  ? 'bg-background text-foreground shadow-sm border'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              {label}
+            </a>
+          )
+        })}
       </div>
 
       {items.length === 0 ? (

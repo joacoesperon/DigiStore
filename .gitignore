@@ -53,6 +53,12 @@ TFG/info_tfg.md
 TFG/guia_tfg_memoria.md
 TFG/notas_tutor.md
 TFG/correciones.md
+TFG/plantilla_tfg/
+TFG/memoria/*.tex
+TFG/memoria/*.bib
+TFG/memoria/*.cls
+TFG/memoria/*.png
+TFG/memoria/*.jpg
 
 # Artefactos de compilación de LaTeX
 *.aux
