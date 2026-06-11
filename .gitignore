@@ -49,6 +49,10 @@ reglas.md
 diario.md
 cosas_aprender.md
 TFG/borrador_*.md
+TFG/info_tfg.md
+TFG/guia_tfg_memoria.md
+TFG/notas_tutor.md
+TFG/correciones.md
 
 # Artefactos de compilación de LaTeX
 *.aux
@@ -61,3 +65,6 @@ TFG/borrador_*.md
 *.fdb_latexmk
 *.fls
 *.synctex.gz
+
+lighthouse_homepage.json
+lighthouse_products.json

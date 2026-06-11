@@ -13,6 +13,7 @@ import {
 import { formatDate } from '@/lib/utils/formatters'
 import type { Review, Product } from '@/types'
 import ApproveReviewButton from '@/components/admin/ApproveReviewButton'
+import DeleteReviewButton from '@/components/admin/DeleteReviewButton'
 import { Star } from 'lucide-react'
 
 type ReviewWithProduct = Review & {
@@ -77,7 +78,10 @@ export default async function AdminReviewsPage() {
                       {formatDate(review.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <ApproveReviewButton reviewId={review.id} />
+                      <div className="flex items-center justify-end gap-2">
+                        <ApproveReviewButton reviewId={review.id} />
+                        <DeleteReviewButton reviewId={review.id} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -103,6 +107,7 @@ export default async function AdminReviewsPage() {
                   <TableHead>Rating</TableHead>
                   <TableHead>Review</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -123,6 +128,9 @@ export default async function AdminReviewsPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(review.created_at)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DeleteReviewButton reviewId={review.id} />
                     </TableCell>
                   </TableRow>
                 ))}

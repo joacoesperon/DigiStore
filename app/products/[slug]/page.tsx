@@ -4,8 +4,11 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import PlanSelector from '@/components/store/PlanSelector'
+import ReviewForm from '@/components/store/ReviewForm'
 import { PRODUCT_TYPE_LABELS } from '@/types'
 import type { Product, LicensePlan } from '@/types'
+import { formatDate } from '@/lib/utils/formatters'
+import { Star } from 'lucide-react'
 
 type ProductWithPlans = Product & { license_plans: LicensePlan[] }
 
@@ -72,6 +75,36 @@ export default async function ProductDetailPage({
     usedTrialPlanIds = trialLicenses?.map((l) => l.license_plan_id) ?? []
   }
 
+  const { data: approvedReviews } = await supabase
+    .from('reviews')
+    .select('id, rating, title, body, created_at')
+    .eq('product_id', p.id)
+    .eq('is_approved', true)
+    .order('created_at', { ascending: false })
+
+  let hasLicense = false
+  let myReview: { id: string } | null = null
+  if (user) {
+    const { data: licenseCheck } = await supabase
+      .from('licenses')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('product_id', p.id)
+      .limit(1)
+      .maybeSingle()
+    hasLicense = !!licenseCheck
+
+    const { data: existingReview } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('product_id', p.id)
+      .maybeSingle()
+    myReview = existingReview
+  }
+
+  const canReview = !!user && hasLicense && !myReview
+
   return (
     <div className="container mx-auto px-4 py-10 max-w-5xl">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
@@ -121,6 +154,45 @@ export default async function ProductDetailPage({
 
       {/* Plans */}
       <PlanSelector plans={p.license_plans} productId={p.id} ownedPlanIds={ownedPlanIds} usedTrialPlanIds={usedTrialPlanIds} />
+
+      <Separator className="my-10" />
+
+      {/* Reviews */}
+      <div>
+        <h2 className="text-xl font-semibold mb-6">Reviews</h2>
+
+        {(approvedReviews ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground mb-8">No reviews yet.</p>
+        ) : (
+          <div className="space-y-6 mb-10">
+            {(approvedReviews ?? []).map((review) => (
+              <div key={review.id} className="border rounded-lg p-4">
+                <div className="flex items-center gap-1 mb-2">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`h-4 w-4 ${n <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}
+                    />
+                  ))}
+                  <span className="text-xs text-muted-foreground ml-2">{formatDate(review.created_at)}</span>
+                </div>
+                {review.title && <p className="text-sm font-medium mb-1">{review.title}</p>}
+                {review.body && <p className="text-sm text-muted-foreground">{review.body}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {canReview && (
+          <div>
+            <h3 className="text-base font-semibold mb-4">Write a review</h3>
+            <ReviewForm productId={p.id} />
+          </div>
+        )}
+        {user && myReview && (
+          <p className="text-sm text-muted-foreground">You already reviewed this product.</p>
+        )}
+      </div>
     </div>
   )
 }

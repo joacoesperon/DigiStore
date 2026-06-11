@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/server'
 import {
   Table,
@@ -49,7 +50,9 @@ export default async function AdminCustomersPage() {
               {customers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium text-sm">
-                    {customer.full_name ?? '—'}
+                    <Link href={`/admin/customers/${customer.id}`} className="hover:underline">
+                      {customer.full_name ?? '—'}
+                    </Link>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {customer.email}

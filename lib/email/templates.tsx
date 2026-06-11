@@ -233,7 +233,7 @@ export function TrialExpiringSoonEmail({
   return (
     <Html>
       <Head />
-      <Preview>Your {productName} trial expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</Preview>
+      <Preview>{`Your ${productName} trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`}</Preview>
       <Body style={baseStyle}>
         <Container style={container}>
           <Heading style={heading}>

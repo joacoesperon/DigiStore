@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
@@ -61,7 +62,9 @@ export default function RegisterPage() {
           <CardDescription>Get started with DigiStore today</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <GoogleButton mode="register" />
+          <Suspense>
+            <GoogleButton mode="register" />
+          </Suspense>
 
           <div className="flex items-center gap-3">
             <Separator className="flex-1" />

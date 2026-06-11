@@ -57,10 +57,10 @@
 
 ## Pendiente
 
-- [ ] Formulario de reseñas para usuarios — en `/products/[slug]` (tras compra) y/o en dashboard
-- [ ] Admin reviews: botón Rechazar/Eliminar (actualmente solo existe Approve)
-- [ ] Admin customers: página de detalle por cliente (licencias + órdenes)
-- [ ] Gráficas de revenue en admin — evolución temporal de ingresos
-- [ ] Filtros/búsqueda en catálogo público `/products` — por tipo, nombre
+- [x] Formulario de reseñas para usuarios — en `/products/[slug]` (con gating por licencia)
+- [x] Admin reviews: botón Rechazar/Eliminar (junto a Approve en pendientes; columna nueva en aprobadas)
+- [x] Admin customers: página de detalle por cliente (licencias + órdenes) en `/admin/customers/[id]`
+- [x] Filtros/búsqueda en catálogo público `/products` — por tipo y por nombre (preserva `q` al cambiar tipo)
+- [ ] Gráficas de revenue en admin — evolución temporal de ingresos (trabajo futuro)
 
 ---
