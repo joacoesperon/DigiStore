@@ -48,8 +48,8 @@ proxy.ts        Protección de rutas (middleware de Next.js)
 
 1. **Clonar e instalar dependencias**
    ```bash
-   git clone <URL-del-repositorio>
-   cd digistore
+   git clone https://github.com/joacoesperon/DigiStore
+   cd DigiStore
    npm install
    ```
 
